@@ -7,9 +7,9 @@ contract("Dex", (accounts) => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
     await truffleAssert.reverts(
-      dex.createLimitOrder(0, web3.utils.fromUtf8("EMRS"), 10, 1)
+      dex.createLimitOrder(0, web3.utils.fromUtf8("EMRS"), 1000, 1)
     );
-    dex.depositEth({ value: 10 });
+    await dex.depositEth({ value: 100 });
     await truffleAssert.passes(
       dex.createLimitOrder(0, web3.utils.fromUtf8("EMRS"), 10, 1)
     );
