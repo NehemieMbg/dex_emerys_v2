@@ -3,7 +3,7 @@ const Emerys = artifacts.require("Emerys");
 const truffleAssert = require("truffle-assertions");
 
 contract("Dex", (accounts) => {
-  it("should throw an error if Eth balance is too low when creating BUY limit order", async () => {
+  it("throw an error if Eth balance is too low when creating BUY limit order", async () => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
     await truffleAssert.reverts(
@@ -15,7 +15,7 @@ contract("Dex", (accounts) => {
     );
   });
 
-  it("should throw an error if token balance is too low when creating SELL order", async () => {
+  it("throw an error if token balance is too low when creating SELL order", async () => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
     await truffleAssert.reverts(
@@ -31,7 +31,7 @@ contract("Dex", (accounts) => {
     );
   });
 
-  it("The BUY order book should be ordered on price from highest to lowest starting at index 0", async () => {
+  it("BUY order book should be ordered on price from highest to lowest", async () => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
     await emerys.approve(dex.address, 500);
@@ -42,6 +42,7 @@ contract("Dex", (accounts) => {
 
     let orderbook = await dex.getOrderBook(web3.utils.fromUtf8("EMRS"), 0);
     assert(orderbook.length > 0);
+    console.log(orderbook);
 
     for (let i = 0; i < orderbook.length - 1; i++) {
       assert(
@@ -51,7 +52,7 @@ contract("Dex", (accounts) => {
     }
   });
 
-  it("The SELL order book should be ordered on price from lowest to highest starting at index 0", async () => {
+  it("SELL order book should be ordered on price from lowest to highest", async () => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
     await emerys.approve(dex.address, 500);
@@ -69,5 +70,3 @@ contract("Dex", (accounts) => {
     }
   });
 });
-
-// The BUY order book should be ordered on price from highest to lowest starting at index 0
