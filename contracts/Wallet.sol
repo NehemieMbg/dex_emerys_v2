@@ -46,4 +46,8 @@ contract Wallet is Ownable {
         balances[msg.sender][symbol] -= amount;
         IERC20(tokens[symbol].tokenAddress).transfer(msg.sender, amount);
     }
+
+    function depositEth() external payable {
+        balances[msg.sender]["ETH"] += msg.value;
+    }
 }
