@@ -17,6 +17,7 @@ contract Dex is Wallet {
         bytes32 symbol;
         uint amount;
         uint price;
+        uint filled;
     }
 
     uint public orderId;
@@ -43,7 +44,7 @@ contract Dex is Wallet {
 
         Order[] storage orders = orderBook[symbol][uint(position)];
         orders.push(
-            Order(orderId, msg.sender, position, symbol, amount, price)
+            Order(orderId, msg.sender, position, symbol, amount, price, 0)
         );
 
         // Bubble sort
@@ -66,5 +67,61 @@ contract Dex is Wallet {
         }
 
         orderId++;
+    }
+
+    function createMarketOrder(
+        Position position,
+        bytes32 symbol,
+        uint amount
+    ) public {
+        if (position == Position.Sell)
+            require(
+                balances[msg.sender][symbol] >= amount,
+                "insufficient balance"
+            );
+
+        Order[] storage orders = orderBook[symbol][
+            position == Position.Buy ? 1 : 0
+        ];
+
+        uint totalFilled = 0;
+
+        for (uint i = 0; i < orders.length && totalFilled < amount; i++) {
+            uint toFill = amount - totalFilled;
+            uint availableToFill = orders[i].amount - orders[i].filled;
+            uint filled = 0;
+
+            if (availableToFill > toFill) filled = toFill;
+            else filled = availableToFill;
+
+            totalFilled += filled;
+            orders[i].filled += filled;
+            uint cost = filled * orders[i].price;
+
+            if (position == Position.Buy) {
+                // if msg.sender is the seller
+                require(balances[msg.sender]["ETH"] >= cost);
+
+                balances[msg.sender][symbol] += filled;
+                balances[msg.sender]["ETH"] -= cost;
+
+                balances[orders[i].trader][symbol] -= filled;
+                balances[orders[i].trader]["ETH"] += cost;
+            } else if (position == Position.Sell) {
+                // if msg.sender is the buyer
+                balances[msg.sender][symbol] -= filled;
+                balances[msg.sender]["ETH"] += cost;
+
+                balances[orders[i].trader][symbol] += filled;
+                balances[orders[i].trader]["ETH"] -= cost;
+            }
+        }
+
+        while (orders.length > 0 && orders[0].filled == orders[0].amount) {
+            for (uint i = 0; i < orders.length - 1; i++) {
+                orders[i] = orders[i + 1];
+            }
+            orders.pop();
+        }
     }
 }
