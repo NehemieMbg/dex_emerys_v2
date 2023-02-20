@@ -23,21 +23,21 @@ contract("Dex", (accounts) => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
     await emerys.approve(dex.address, 500);
-    await dex.deposit(100, web3.utils.fromUtf8("EMRS"));
+    await dex.deposit(100, emerys.address);
 
-    let balance = await dex.balances(accounts[0], web3.utils.fromUtf8("EMRS"));
+    let balance = await dex.balances(accounts[0], emerys.address);
     assert.equal(balance.toNumber(), 100);
   });
 
   it("should handle withdrawals", async () => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
-    await truffleAssert.passes(dex.withdraw(50, web3.utils.fromUtf8("EMRS")));
+    await truffleAssert.passes(dex.withdraw(50, emerys.address));
   });
 
   it("should handle faulty withdrawals", async () => {
     let dex = await Dex.deployed();
     let emerys = await Emerys.deployed();
-    await truffleAssert.reverts(dex.withdraw(500, web3.utils.fromUtf8("EMRS")));
+    await truffleAssert.reverts(dex.withdraw(500, emerys.address));
   });
 });

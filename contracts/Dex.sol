@@ -14,7 +14,7 @@ contract Dex is Wallet {
         uint id;
         address trader;
         Position position;
-        bytes32 symbol;
+        address tokenAddress;
         uint amount;
         uint price;
         uint filled;
@@ -22,29 +22,29 @@ contract Dex is Wallet {
 
     uint public orderId;
 
-    mapping(bytes32 => mapping(uint => Order[])) public orderBook;
+    mapping(address => mapping(uint => Order[])) public orderBook;
 
     function getOrderBook(
-        bytes32 symbol,
+        address tokenAddress,
         Position position
     ) public view returns (Order[] memory) {
-        return orderBook[symbol][uint(position)];
+        return orderBook[tokenAddress][uint(position)];
     }
 
     function createLimitOrder(
         Position position,
-        bytes32 symbol,
+        address tokenAddress,
         uint amount,
         uint price
     ) public {
         if (position == Position.Buy)
-            require(balances[msg.sender]["ETH"] >= amount * price);
+            require(ethBalance[msg.sender] >= amount * price);
         else if (position == Position.Sell)
-            require(balances[msg.sender][symbol] >= amount);
+            require(balances[msg.sender][tokenAddress] >= amount);
 
-        Order[] storage orders = orderBook[symbol][uint(position)];
+        Order[] storage orders = orderBook[tokenAddress][uint(position)];
         orders.push(
-            Order(orderId, msg.sender, position, symbol, amount, price, 0)
+            Order(orderId, msg.sender, position, tokenAddress, amount, price, 0)
         );
 
         // Bubble sort
@@ -71,16 +71,16 @@ contract Dex is Wallet {
 
     function createMarketOrder(
         Position position,
-        bytes32 symbol,
+        address tokenAddress,
         uint amount
     ) public {
         if (position == Position.Sell)
             require(
-                balances[msg.sender][symbol] >= amount,
+                balances[msg.sender][tokenAddress] >= amount,
                 "insufficient balance"
             );
 
-        Order[] storage orders = orderBook[symbol][
+        Order[] storage orders = orderBook[tokenAddress][
             position == Position.Buy ? 1 : 0
         ];
 
@@ -100,20 +100,20 @@ contract Dex is Wallet {
 
             if (position == Position.Buy) {
                 // if msg.sender is the seller
-                require(balances[msg.sender]["ETH"] >= cost);
+                require(ethBalance[msg.sender] >= cost);
 
-                balances[msg.sender][symbol] += filled;
-                balances[msg.sender]["ETH"] -= cost;
+                balances[msg.sender][tokenAddress] += filled;
+                ethBalance[msg.sender] -= cost;
 
-                balances[orders[i].trader][symbol] -= filled;
-                balances[orders[i].trader]["ETH"] += cost;
+                balances[orders[i].trader][tokenAddress] -= filled;
+                ethBalance[orders[i].trader] += cost;
             } else if (position == Position.Sell) {
                 // if msg.sender is the buyer
-                balances[msg.sender][symbol] -= filled;
-                balances[msg.sender]["ETH"] += cost;
+                balances[msg.sender][tokenAddress] -= filled;
+                ethBalance[msg.sender] += cost;
 
-                balances[orders[i].trader][symbol] += filled;
-                balances[orders[i].trader]["ETH"] -= cost;
+                balances[orders[i].trader][tokenAddress] += filled;
+                ethBalance[orders[i].trader] -= cost;
             }
         }
 

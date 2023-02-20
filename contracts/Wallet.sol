@@ -10,44 +10,51 @@ contract Wallet is Ownable {
         address tokenAddress;
     }
 
-    mapping(bytes32 => Token) public tokens;
+    mapping(address => Token) public tokens;
+    mapping(address => mapping(address => uint256)) public balances;
+    mapping(address => uint) public ethBalance;
+
     bytes32[] public tokenList;
 
-    mapping(address => mapping(bytes32 => uint256)) public balances;
-
-    modifier tokenExist(bytes32 symbol) {
+    modifier tokenExist(address tokenAddress) {
         require(
-            tokens[symbol].tokenAddress != address(0),
+            tokens[tokenAddress].tokenAddress != address(0),
             "tokens does not exist"
         );
         _;
     }
 
     function addToken(bytes32 symbol, address tokenAddress) external onlyOwner {
-        tokens[symbol] = Token(symbol, tokenAddress);
+        tokens[tokenAddress] = Token(symbol, tokenAddress);
         tokenList.push(symbol);
     }
 
-    function deposit(uint amount, bytes32 symbol) external tokenExist(symbol) {
-        balances[msg.sender][symbol] += amount;
-        IERC20(tokens[symbol].tokenAddress).transferFrom(
+    function deposit(
+        uint amount,
+        address tokenAddress
+    ) external tokenExist(tokenAddress) {
+        balances[msg.sender][tokenAddress] += amount;
+        IERC20(tokens[tokenAddress].tokenAddress).transferFrom(
             msg.sender,
             address(this),
             amount
         );
     }
 
-    function withdraw(uint amount, bytes32 symbol) external tokenExist(symbol) {
+    function withdraw(
+        uint amount,
+        address tokenAddress
+    ) external tokenExist(tokenAddress) {
         require(
-            balances[msg.sender][symbol] >= amount,
+            balances[msg.sender][tokenAddress] >= amount,
             "Balance not sufficient"
         );
 
-        balances[msg.sender][symbol] -= amount;
-        IERC20(tokens[symbol].tokenAddress).transfer(msg.sender, amount);
+        balances[msg.sender][tokenAddress] -= amount;
+        IERC20(tokens[tokenAddress].tokenAddress).transfer(msg.sender, amount);
     }
 
     function depositEth() external payable {
-        balances[msg.sender]["ETH"] += msg.value;
+        ethBalance[msg.sender] += msg.value;
     }
 }
